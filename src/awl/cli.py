@@ -68,21 +68,15 @@ def main() -> int:
     )
 
     # Positional arguments
-    _ = arg_parser.add_argument("pos_name", type=str, nargs="?", default="")
     _ = arg_parser.add_argument("pos_input", nargs="?", help="Path to input file or '-' for stdin")
 
     # Optional flags
-    _ = arg_parser.add_argument("-n", "--name", type=str, help="Name of person to greet.")
     _ = arg_parser.add_argument("-i", "--input", type=str, help="Path to input file or '-' for stdin")
     _ = arg_parser.add_argument(
         "-v", "--version", action="version", version=f"{meta['name']} version {meta['version']}"
     )
 
     args: argparse.Namespace = arg_parser.parse_args()
-
-    # Disambiguation logic for name
-    if args.name and args.pos_name and args.name != args.pos_name:
-        print("Warning: both name flag and positional input provided; using --name/-n", file=sys.stderr)
 
     # input logic
     if args.input and args.pos_input and args.input != args.pos_input:
