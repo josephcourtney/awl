@@ -4,9 +4,9 @@ import tomllib
 from collections.abc import Iterable
 from pathlib import Path
 
-ALL_IGNORE = "all:ignore"
-ALL_INCLUDE_PRIVATE = "all:include-private"
-ALL_EXCLUDE_PUBLIC = "all:exclude-public"
+ALL_IGNORE = "awl:ignore"
+ALL_INCLUDE_PRIVATE = "awl:include-private"
+ALL_EXCLUDE_PUBLIC = "awl:exclude-public"
 
 
 def parse_control_flags(code: str) -> dict:

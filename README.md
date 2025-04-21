@@ -12,9 +12,9 @@ It scans `__init__.py` files and automatically updates the `__all__` declaration
 - 🔄 Automatically updates or adds `__all__`
 - 📁 Walks all source packages defined in `pyproject.toml`
 - 🧵 Supports inline or file-level control via special comments:
-  - `# all:ignore` — skip file entirely
-  - `# all:include-private` — allow private names (e.g. `_foo`)
-  - `# all:exclude-public` — skip public names
+  - `# awl:ignore` — skip file entirely
+  - `# awl:include-private` — allow private names (e.g. `_foo`)
+  - `# awl:exclude-public` — skip public names
 - 📝 **Dry-run** mode (`--dry-run`) to show what would change without writing files
 - 🔍 **Diff** mode (`--diff`) to print a unified diff of changes
 - 🧘 No runtime dependencies
@@ -75,16 +75,16 @@ You can fine-tune what gets included with comment directives:
 ### File-level (top of file)
 
 ```python
-# all:ignore            # skip the file entirely
-# all:include-private   # allow private names (e.g. _foo)
-# all:exclude-public    # skip public names
+# awl:ignore            # skip the file entirely
+# awl:include-private   # allow private names (e.g. _foo)
+# awl:exclude-public    # skip public names
 ```
 
 ### Line-level
 
 ```python
-from .core import main  # all:ignore
-from .core import _helper  # all:include-private
+from .core import main  # awl:ignore
+from .core import _helper  # awl:include-private
 ```
 
 ---

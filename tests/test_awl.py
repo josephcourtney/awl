@@ -18,21 +18,21 @@ from awl.core import (
     ("code", "expected"),
     [
         (
-            "# all:ignore\nfrom .foo import bar",
+            "# awl:ignore\nfrom .foo import bar",
             {
                 "file": {"ignore_file": True, "include_private": False, "exclude_public": False},
                 "lines": {1: {"ignore"}},
             },
         ),
         (
-            "# all:include-private\nfrom .foo import _bar",
+            "# awl:include-private\nfrom .foo import _bar",
             {
                 "file": {"ignore_file": False, "include_private": True, "exclude_public": False},
                 "lines": {1: {"include_private"}},
             },
         ),
         (
-            "from .foo import bar  # all:exclude-public",
+            "from .foo import bar  # awl:exclude-public",
             {
                 "file": {"ignore_file": False, "include_private": False, "exclude_public": True},
                 "lines": {1: {"exclude_public"}},
@@ -48,7 +48,7 @@ def test_parse_control_flags(code, expected):
 def test_find_public_names_basic():
     code = """
 from .foo import bar
-from .baz import _qux  # all:include-private
+from .baz import _qux  # awl:include-private
 """
     flags = parse_control_flags(code)
     tree = ast.parse(code)
@@ -176,7 +176,7 @@ def test_core_main_wildcard(tmp_path, capsys):
 
 def test_core_main_ignore_directive(tmp_path, capsys):
     f = tmp_path / "__init__.py"
-    f.write_text("# all:ignore\nfrom .foo import bar\n")
+    f.write_text("# awl:ignore\nfrom .foo import bar\n")
     core.main(str(f))
     out, _ = capsys.readouterr()
     assert "Skipped" in out
@@ -201,7 +201,7 @@ def test_core_wildcard_skip(tmp_path, capsys):
 
 def test_core_ignore_directive(tmp_path, capsys):
     file = tmp_path / "__init__.py"
-    file.write_text("# all:ignore\nfrom .foo import bar\n")
+    file.write_text("# awl:ignore\nfrom .foo import bar\n")
     core_main(str(file))
     out, _ = capsys.readouterr()
     assert "Skipped" in out
