@@ -2,7 +2,7 @@
 [project]
   name = "awl"
   dynamic = ["version"]
-  description = "skeleton python project"
+  description = "simple utility to keep `__all__` up to date"
   readme = "README.md"
   authors = [
     { name = "Joseph M. Courtney", email = "joseph.m.courtney@gmail.com" },
@@ -28,7 +28,7 @@
     "pytest-cov>=6.0.0",
     "pytest>=8.3.5",
     "pytest-randomly>=3.16.0",
-]
+  ]
 
 # =================================== build ====================================
 [build-system]
