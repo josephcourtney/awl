@@ -1,0 +1,101 @@
+# =================================== project ====================================
+[project]
+  name = "awl"
+  dynamic = ["version"]
+  description = "skeleton python project"
+  readme = "README.md"
+  authors = [
+    { name = "Joseph M. Courtney", email = "joseph.m.courtney@gmail.com" },
+  ]
+  urls = { "Homepage" = "https://github.com/josephcourtney/awl", "Bug Tracker" = "https://github.com/josephcourtney/awl/issues" }
+  license = { text = "MIT License" }
+  classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+  ]
+  scripts = { awl = "awl.cli:main" }
+  requires-python = ">=3.13"
+  dependencies = [
+    # "rich>=13.9.4",
+  ]
+[dependency-groups]
+  dev = [
+    "ruff>=0.11.0",
+    "basedpyright>=1.28.1",
+    "coverage>=7.7.0",
+    "pytest-cov>=6.0.0",
+    "pytest>=8.3.5",
+    "pytest-randomly>=3.16.0",
+]
+
+# =================================== build ====================================
+[build-system]
+  requires      = ["hatchling"]
+  build-backend = "hatchling.build"
+
+[tool.hatch.build]
+  includes = ["src/awl/**"]
+
+[tool.hatch.version]
+  path = "src/awl/__version__.py"
+
+# ==================================== lint ====================================
+[tool.ruff]
+  extend = "./ruff.default.toml"
+
+  [tool.ruff.lint]
+    ignore = []
+
+# =================================== typecheck ===================================
+[tool.basedpyright]
+  typeCheckingMode = "recommended"
+  pythonVersion = "3.13"
+  pythonPlatform = "Darwin"
+  reportImplicitOverride = false
+  reportMissingTypeStubs = false
+  reportUnusedParameter = false
+  executionEnvironments = [
+    { root = "tests", reportPrivateUsage = false, reportUnusedCallResult = false, extraPaths = [] },
+  ]
+
+
+# =================================== test ===================================
+[tool.pytest.ini_options]
+  addopts = [
+    "--cov=awl",
+    "--cov-report=xml",
+    "--cov-report=term-missing",
+  ]
+  testpaths = ["tests"]
+
+# =================================== test:coverage ===================================
+[tool.coverage.run]
+  branch = true
+  source = ["src/awl"]
+
+[tool.coverage.report]
+  show_missing = true
+  skip_covered = true
+  # Regexes for lines to exclude from consideration
+  exclude_also = [
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "if self\\.debug",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+
+    # Don't complain about abstract methods, they aren't run:
+    "@(abc\\.)?abstractmethod",
+  ]
+  ignore_errors = true
+
+[tool.coverage.xml]
+  output = ".coverage.xml"

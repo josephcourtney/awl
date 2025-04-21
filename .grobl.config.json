@@ -1,0 +1,26 @@
+{
+  "exclude_tree": [
+    "*.egg-info",
+    "*.ipynb",
+    ".git/",
+    ".gitignore",
+    ".gitmodules",
+    ".groblignore",
+    ".pytest_cache/",
+    ".python-version",
+    ".venv/",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    ".coverage.xml",
+    "ruff.default.toml",
+    "uv.lock",
+    "yarn.lock"
+  ],
+  "exclude_print": [
+    "*.json",
+    "*.html"
+  ],
+  "include_tree_tags": "tree",
+  "include_file_tags": "file"
+}
