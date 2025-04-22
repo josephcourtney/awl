@@ -45,25 +45,28 @@ awl path/to/package/__init__.py
 awl
 ```
 
-### Preview changes (dry-run)
+### Verbose mode
+
+Use `--verbose` or `-v` to print old and new `__all__` values for each file, even if no change is made.
 
 ```bash
-# Show what updates would happen, without writing files
-awl --dry-run
+awl --verbose
 ```
 
-### Show diffs
+### Dry-run mode
+
+Use `--dry-run` or `-d` to preview changes without writing them.
 
 ```bash
-# Print unified diff of changes; writes files unless --dry-run is also used
-awl --diff
+awl -d
 ```
 
-You can also combine flags:
+### Combined
+
+You can use both for a complete report without applying changes:
 
 ```bash
-# Preview diffs without writing
-awl --dry-run --diff
+awl -d -v
 ```
 
 ---

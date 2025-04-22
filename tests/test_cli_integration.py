@@ -10,7 +10,7 @@ import awl.cli as awl_cli
 from awl import cli
 
 # Helpers
-PYTHON = Path(sys.executable).resolve()
+PYTHON = Path(sys.executable)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = PROJECT_ROOT / "src"
 
@@ -26,7 +26,11 @@ def make_temp_project(structure: dict[str, str]) -> Path:
 
 def run_awl(args, cwd):
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(SRC_DIR)
+
+    # Ensure Python sees both the src dir and the site-packages
+    site_packages = next(p for p in sys.path if "site-packages" in p)
+    env["PYTHONPATH"] = f"{site_packages}:{SRC_DIR}:{env.get('PYTHONPATH', '')}"
+
     return subprocess.run(
         [PYTHON, "-m", "awl", *args],
         cwd=cwd,
@@ -83,10 +87,9 @@ def test_cli_warn_conflicting_args(tmp_path):
 def test_cli_read_stdin_and_write_stdout(tmp_path):
     pkg = tmp_path / "dummy"
     pkg.mkdir()
-    foo = pkg / "foo.py"
-    foo.write_text("bar = 7\n")
+    (pkg / "foo.py").write_text("bar = 7\n")
 
-    p = subprocess.Popen(
+    proc = subprocess.Popen(
         [PYTHON, "-m", "awl", "-i", "-"],
         cwd=tmp_path,
         stdin=subprocess.PIPE,
@@ -96,8 +99,8 @@ def test_cli_read_stdin_and_write_stdout(tmp_path):
         env={**os.environ, "PYTHONPATH": str(SRC_DIR)},
     )
     stdin_content = "from .dummy.foo import bar\n"
-    out, err = p.communicate(stdin_content)
-    assert p.returncode == 0
+    out, err = proc.communicate(stdin_content)
+    assert proc.returncode == 0
     assert '__all__ = ["bar"]' in out
     assert not err
 

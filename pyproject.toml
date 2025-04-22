@@ -18,9 +18,8 @@
   scripts = { awl = "awl.cli:main" }
   requires-python = ">=3.13"
   dependencies = [
-  # "rich>=13.9.4",
-  "click>=8.1.8",
-]
+    "click>=8.1.8",
+  ]
 [dependency-groups]
   dev = [
     "ruff>=0.11.0",
@@ -73,8 +72,9 @@
 
 # =================================== test:coverage ===================================
 [tool.coverage.run]
-  branch = true
-  source = ["src/awl"]
+  branch   = true
+  source   = ["src/awl"]
+  parallel = true
 
 [tool.coverage.report]
   show_missing = true

@@ -42,7 +42,7 @@ def find_public_names(tree: ast.Module, flags: dict) -> list[str]:
     line_flags = flags["lines"]
 
     for node in tree.body:
-        if not isinstance(node, (ast.Import, ast.ImportFrom)):
+        if not isinstance(node, ast.Import | ast.ImportFrom):
             continue
         lineno = node.lineno
         if "ignore" in line_flags.get(lineno, set()):
@@ -163,11 +163,26 @@ def collect_init_files(base_dir: Path) -> list[Path]:
     return list(base_dir.rglob("__init__.py"))
 
 
+def extract_current_all(tree: ast.Module) -> list[str] | None:
+    assigns = _find_all_node(tree)
+    if not assigns:
+        return None
+    try:
+        all_node = assigns[0].value
+        if isinstance(all_node, (ast.List | ast.Tuple)):
+            return [elt.s for elt in all_node.elts if isinstance(elt, ast.Str)]
+    except Exception:  # noqa: BLE001
+        # Avoid breaking on malformed __all__; return None instead
+        return None
+    return None
+
+
 def main(
     path: str | None = None,
     *,
     dry_run: bool = False,
     show_diff: bool = False,
+    verbose: bool = False,
 ) -> None:
     if path is None:
         pyproject_path = Path("pyproject.toml")
@@ -184,7 +199,6 @@ def main(
         code = file_path.read_text()
         tree = ast.parse(code)
 
-        # wildcard import → skip
         if any(
             isinstance(node, ast.ImportFrom) and any(alias.name == "*" for alias in node.names)
             for node in tree.body
@@ -198,4 +212,14 @@ def main(
             continue
 
         names = find_public_names(tree, flags)
-        update_dunder_all(file_path, names, dry_run=dry_run, show_diff=show_diff)
+
+        if verbose:
+            old_all = extract_current_all(tree)
+            print(f"📂 {file_path}")
+            print(f"  Old __all__: {old_all}")
+            print(f"  New __all__: {names}")
+
+        changed = update_dunder_all(file_path, names, dry_run=dry_run, show_diff=show_diff)
+
+        if not changed:
+            print(f"✅ {file_path} — up to date")
