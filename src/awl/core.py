@@ -1,12 +1,13 @@
 import ast
-import difflib
 import tomllib
 from collections.abc import Iterable
 from pathlib import Path
 
-ALL_IGNORE = "awl:ignore"
-ALL_INCLUDE_PRIVATE = "awl:include-private"
-ALL_EXCLUDE_PUBLIC = "awl:exclude-public"
+AWL_DIRECTIVES = {
+    "ignore_file": "awl:ignore",
+    "include_private": "awl:include-private",
+    "exclude_public": "awl:exclude-public",
+}
 
 
 def parse_control_flags(code: str) -> dict:
@@ -15,20 +16,20 @@ def parse_control_flags(code: str) -> dict:
     line_flags: dict[int, set[str]] = {}
 
     for line in lines[:5]:
-        if f"# {ALL_IGNORE}" in line:
+        if f"# {AWL_DIRECTIVES['ignore_file']}" in line:
             file_flags["ignore_file"] = True
-        if f"# {ALL_INCLUDE_PRIVATE}" in line:
+        if f"# {AWL_DIRECTIVES['include_private']}" in line:
             file_flags["include_private"] = True
-        if f"# {ALL_EXCLUDE_PUBLIC}" in line:
+        if f"# {AWL_DIRECTIVES['exclude_public']}" in line:
             file_flags["exclude_public"] = True
 
     for lineno, line in enumerate(lines, 1):
         flags: set[str] = set()
-        if f"# {ALL_IGNORE}" in line:
+        if f"# {AWL_DIRECTIVES['ignore_file']}" in line:
             flags.add("ignore")
-        if f"# {ALL_INCLUDE_PRIVATE}" in line:
+        if f"# {AWL_DIRECTIVES['include_private']}" in line:
             flags.add("include_private")
-        if f"# {ALL_EXCLUDE_PUBLIC}" in line:
+        if f"# {AWL_DIRECTIVES['exclude_public']}" in line:
             flags.add("exclude_public")
         if flags:
             line_flags[lineno] = flags
@@ -76,29 +77,16 @@ def _format_new_block(indent: str, new_all_str: str) -> str:
     return f"{indent}__all__ = [{new_all_str}]\n"
 
 
-def _print_diff(path: Path, old_lines: list[str], new_lines: list[str]) -> None:
-    diff = difflib.unified_diff(
-        old_lines,
-        new_lines,
-        fromfile=str(path),
-        tofile=str(path) + " (new)",
-        lineterm="",
-    )
-    print("\n".join(diff))
-
-
 def update_dunder_all(
     path: Path,
     new_all: Iterable[str],
     *,
     dry_run: bool = False,
-    show_diff: bool = False,
 ) -> bool:
     """
     Update (or add) the __all__ assignment in `path`.
 
     If dry_run is True, do not write—just report.
-    If show_diff is True, print a unified diff between old and new.
 
     Returns True if a change *would* be (or was) made.
     """
@@ -128,9 +116,6 @@ def update_dunder_all(
     else:
         new_block = _format_new_block("", new_all_str)
         new_lines.append(new_block)
-
-    if show_diff or dry_run:
-        _print_diff(path, lines, new_lines)
 
     if not dry_run:
         path.write_text("".join(new_lines))
@@ -181,7 +166,6 @@ def main(
     path: str | None = None,
     *,
     dry_run: bool = False,
-    show_diff: bool = False,
     verbose: bool = False,
 ) -> None:
     if path is None:
@@ -219,7 +203,7 @@ def main(
             print(f"  Old __all__: {old_all}")
             print(f"  New __all__: {names}")
 
-        changed = update_dunder_all(file_path, names, dry_run=dry_run, show_diff=show_diff)
+        changed = update_dunder_all(file_path, names, dry_run=dry_run)
 
         if not changed:
             print(f"✅ {file_path} — up to date")

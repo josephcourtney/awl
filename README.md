@@ -2,7 +2,7 @@
 
 **awl** is a lightweight utility that keeps your Python module’s `__all__` exports in sync with its imports.
 
-It scans `__init__.py` files and automatically updates the `__all__` declaration based on the symbols you import — with support for comment-based control flags to ignore or include specific names. It also now supports **dry-run** and **diff** modes so you can preview changes before applying them.
+It scans `__init__.py` files and automatically updates the `__all__` declaration based on the symbols you import — with support for comment-based control flags to ignore or include specific names. It also now supports **dry-run** mode so you can preview changes before applying them.
 
 ---
 
@@ -16,7 +16,6 @@ It scans `__init__.py` files and automatically updates the `__all__` declaration
   - `# awl:include-private` — allow private names (e.g. `_foo`)
   - `# awl:exclude-public` — skip public names
 - 📝 **Dry-run** mode (`--dry-run`) to show what would change without writing files
-- 🔍 **Diff** mode (`--diff`) to print a unified diff of changes
 - 🧘 No runtime dependencies
 
 ---

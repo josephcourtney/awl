@@ -43,17 +43,9 @@ def test_cli_dry_run_adds_all(tmp_path):
     init_file = tmp_path / "__init__.py"
     init_file.write_text("from .foo import bar\n")
     runner = CliRunner()
-    result = runner.invoke(cli.main, [str(init_file), "--dry-run"])
+    result = runner.invoke(cli.main, ["--input", str(init_file), "--dry-run", "--verbose"])
     assert result.exit_code == 0
     assert "📝 Dry run" in result.output
-    assert '__all__ = ["bar"]' in result.output
-
-
-def test_cli_diff_flag(tmp_path):
-    init_file = tmp_path / "__init__.py"
-    init_file.write_text("from .foo import bar\n__all__ = []\n")
-    runner = CliRunner()
-    result = runner.invoke(cli.main, [str(init_file), "--diff"])
-    assert result.exit_code == 0
-    assert result.output.startswith(f"--- {init_file}")
-    assert '+__all__ = ["bar"]' in result.output
+    assert "New __all__: ['bar']" in result.output
+    # Confirm the file itself wasn't changed
+    assert "__all__" not in init_file.read_text()

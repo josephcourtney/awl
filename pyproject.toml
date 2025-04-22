@@ -64,7 +64,7 @@
 # =================================== test ===================================
 [tool.pytest.ini_options]
   addopts = [
-    "--cov=awl",
+    "--cov=src/awl",
     "--cov-report=xml",
     "--cov-report=term-missing",
   ]
@@ -72,8 +72,8 @@
 
 # =================================== test:coverage ===================================
 [tool.coverage.run]
-  branch   = true
   source   = ["src/awl"]
+  branch   = true
   parallel = true
 
 [tool.coverage.report]

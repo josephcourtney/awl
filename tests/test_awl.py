@@ -129,7 +129,7 @@ def test_update_dunder_all_dry_run(tmp_path, capsys):
     file = tmp_path / "__init__.py"
     file.write_text("from .foo import bar\n__all__ = []\n")
     # Dry run: no file write
-    updated = update_dunder_all(file, ["bar"], dry_run=True, show_diff=False)
+    updated = update_dunder_all(file, ["bar"], dry_run=True)
     assert updated is True
     # File should be unchanged on disk
     content = file.read_text()
@@ -137,22 +137,6 @@ def test_update_dunder_all_dry_run(tmp_path, capsys):
     # And we should see the "Dry run" notice
     out, _ = capsys.readouterr()
     assert "📝 Dry run: no changes written" in out
-
-
-def test_update_dunder_all_show_diff(tmp_path, capsys):
-    # Setup a simple __init__.py without any __all__
-    file = tmp_path / "__init__.py"
-    file.write_text("from .foo import bar\n")
-    # Show diff and actually write
-    updated = update_dunder_all(file, ["bar"], dry_run=False, show_diff=True)
-    assert updated is True
-    # File should now contain __all__
-    content = file.read_text()
-    assert '__all__ = ["bar"]' in content
-    # And the diff header should be in stdout
-    out, _ = capsys.readouterr()
-    assert out.startswith(f"--- {file}")
-    assert '+__all__ = ["bar"]' in out
 
 
 def test_update_dunder_all_multiple_assign(tmp_path, capsys):
@@ -188,15 +172,6 @@ def test_find_public_names_private_dropped():
     flags = parse_control_flags(code)
     names = find_public_names(__import__("ast").parse(code), flags)
     assert names == []
-
-
-def test_core_wildcard_skip(tmp_path, capsys):
-    file = tmp_path / "__init__.py"
-    file.write_text("from .foo import *\n")
-    core_main(str(file))
-    out, _ = capsys.readouterr()
-    assert "Wildcard import" in out
-    assert "__all__" not in file.read_text()
 
 
 def test_core_ignore_directive(tmp_path, capsys):

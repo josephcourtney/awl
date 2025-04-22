@@ -11,6 +11,8 @@ import click
 
 from awl.core import main as awl_main
 
+from .__version__ import __version__
+
 
 def get_metadata() -> dict[str, str]:
     pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
@@ -60,13 +62,10 @@ logger = logging.getLogger(__name__)
     "-i", "--input", "input_path", type=click.Path(exists=False), help="Path to input file or '-' for stdin"
 )
 @click.option("-d", "--dry-run", is_flag=True, help="Show what would change, but do not write any files.")
-@click.option(
-    "--diff", is_flag=True, help="Print a unified diff of changes (can be combined with --dry-run)."
-)
 @click.option("-v", "--verbose", is_flag=True, help="Show old and new __all__ values for all files.")
 @click.option("-q", "--quiet", is_flag=True, help="Suppress non-critical output.")
-@click.version_option(None, "-V", "--version", package_name="awl")
-def main(pos_input, input_path, dry_run, diff, verbose, quiet):
+@click.version_option(__version__, "-V", "--version", package_name="awl")
+def main(pos_input, input_path, dry_run, verbose, quiet):
     """Awl — keep __all__ declarations in sync with imports."""
     # Setup logging
     level = logging.WARNING if quiet else (logging.DEBUG if verbose else logging.INFO)
@@ -78,7 +77,7 @@ def main(pos_input, input_path, dry_run, diff, verbose, quiet):
         click.echo("Warning: both input flag and positional input provided; using --input/-i", err=True)
 
     if not input_path:
-        awl_main(None, dry_run=dry_run, show_diff=diff, verbose=verbose)
+        awl_main(None, dry_run=dry_run, verbose=verbose)
         return
 
     # Handle stdin
@@ -90,7 +89,7 @@ def main(pos_input, input_path, dry_run, diff, verbose, quiet):
             click.echo(f"Error: Input file does not exist: {input_path}", err=True)
             sys.exit(1)
 
-    awl_main(str(input_path), dry_run=dry_run, show_diff=diff, verbose=verbose)
+    awl_main(str(input_path), dry_run=dry_run, verbose=verbose)
 
     if input_path == "-":
         try:

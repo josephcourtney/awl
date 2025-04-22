@@ -13,7 +13,7 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
             if title.startswith(("Captured stdout", "Captured stderr")):
                 lines = content.splitlines()
                 if len(lines) > MAX_OUTPUT_LINES:
-                    truncated_section: str = "\n".join(*[lines[:MAX_OUTPUT_LINES], "... [output truncated]"])
+                    truncated_section: str = "\n".join([*lines[:MAX_OUTPUT_LINES], "... [output truncated]"])
                     new_sections.append((title, truncated_section))
                 else:
                     new_sections.append((title, content))
