@@ -86,10 +86,6 @@ def main() -> int:
         help="Only show warnings and errors, suppress informational messages.",
     )
     parser.add_argument(
-        "-V", "--verbose", action="store_true", help="Show debug-level output for troubleshooting."
-    )
-
-    parser.add_argument(
         "pos_input",
         nargs="?",
         help="Path to input file or '-' for stdin",
@@ -100,20 +96,23 @@ def main() -> int:
         help="Path to input file or '-' for stdin",
     )
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Show what would change, but do not write any files.",
-    )
-    parser.add_argument(
-        "--diff",
-        action="store_true",
-        help="Print a unified diff of any changes (works with or without --dry-run).",
-    )
-    parser.add_argument(
-        "-v",
         "--version",
         action="version",
         version=f"{meta['name']} version {meta['version']}",
+    )
+
+    parser.add_argument(
+        "--dry-run",
+        "-d",
+        action="store_true",
+        help="Show what would change, but do not write any files.",
+    )
+
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Show old and new __all__ values for all files.",
     )
 
     args = parser.parse_args()

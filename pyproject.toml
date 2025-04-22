@@ -18,8 +18,9 @@
   scripts = { awl = "awl.cli:main" }
   requires-python = ">=3.13"
   dependencies = [
-    # "rich>=13.9.4",
-  ]
+  # "rich>=13.9.4",
+  "click>=8.1.8",
+]
 [dependency-groups]
   dev = [
     "ruff>=0.11.0",
