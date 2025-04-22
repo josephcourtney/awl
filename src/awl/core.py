@@ -2,12 +2,38 @@ import ast
 import tomllib
 from collections.abc import Iterable
 from pathlib import Path
+from typing import TypedDict
+
+
+class ProcessResult(TypedDict, total=False):
+    status: str
+    reason: str
+    file: Path
+    old_all: list[str]
+    new_all: list[str]
+
 
 AWL_DIRECTIVES = {
     "ignore_file": "awl:ignore",
     "include_private": "awl:include-private",
     "exclude_public": "awl:exclude-public",
 }
+
+
+class ImportFilter:
+    def __init__(self, flags: dict):
+        self.file_flags = flags["file"]
+        self.line_flags = flags["lines"]
+
+    def should_include(self, name: str, lineno: int) -> bool:
+        is_private = name.startswith("_")
+        line = self.line_flags.get(lineno, set())
+
+        if "ignore" in line:
+            return False
+        if is_private and not (self.file_flags["include_private"] or "include_private" in line):
+            return False
+        return not (not is_private and (self.file_flags["exclude_public"] or "exclude_public" in line))
 
 
 def parse_control_flags(code: str) -> dict:
@@ -39,26 +65,16 @@ def parse_control_flags(code: str) -> dict:
 
 def find_public_names(tree: ast.Module, flags: dict) -> list[str]:
     names: set[str] = set()
-    file_flags = flags["file"]
-    line_flags = flags["lines"]
+    name_filter = ImportFilter(flags)
 
     for node in tree.body:
         if not isinstance(node, ast.Import | ast.ImportFrom):
             continue
         lineno = node.lineno
-        if "ignore" in line_flags.get(lineno, set()):
-            continue
-
         for alias in node.names:
             name = alias.asname or alias.name.split(".")[0]
-            is_private = name.startswith("_")
-            allow_private = file_flags["include_private"] or "include_private" in line_flags.get(
-                lineno, set()
-            )
-            exclude_public = file_flags["exclude_public"] or "exclude_public" in line_flags.get(lineno, set())
-            if (is_private and not allow_private) or (not is_private and exclude_public):
-                continue
-            names.add(name)
+            if name_filter.should_include(name, lineno):
+                names.add(name)
 
     return sorted(names)
 
@@ -73,8 +89,15 @@ def _find_all_node(tree: ast.Module) -> list[ast.Assign]:
     ]
 
 
-def _format_new_block(indent: str, new_all_str: str) -> str:
-    return f"{indent}__all__ = [{new_all_str}]\n"
+def _format_new_block(indent: str, new_all: list[str], max_line_length: int = 120) -> str:
+    inline = f"{indent}__all__ = [{', '.join(f'"{name}"' for name in new_all)}]\n"
+    if len(inline) <= max_line_length:
+        return inline
+
+    multiline = f"{indent}__all__ = [\n"
+    multiline += "".join(f'{indent}    "{name}",\n' for name in new_all)
+    multiline += f"{indent}]\n"
+    return multiline
 
 
 def update_dunder_all(
@@ -82,23 +105,15 @@ def update_dunder_all(
     new_all: Iterable[str],
     *,
     dry_run: bool = False,
-) -> bool:
-    """
-    Update (or add) the __all__ assignment in `path`.
-
-    If dry_run is True, do not write—just report.
-
-    Returns True if a change *would* be (or was) made.
-    """
+) -> tuple[bool, str | None]:
     code = path.read_text()
     tree = ast.parse(code)
     lines = code.splitlines(keepends=True)
-    new_all_str = ", ".join(f'"{name}"' for name in sorted(new_all))
+    sorted_all = sorted(new_all)
 
     assigns = _find_all_node(tree)
     if len(assigns) > 1:
-        print(f"⚠️  Multiple __all__ assignments in {path}; aborting without changes.")
-        return False
+        return False, "Multiple __all__ assignments"
 
     old_block = None
     new_lines = lines.copy()
@@ -107,24 +122,19 @@ def update_dunder_all(
         node = assigns[0]
         start, end = node.lineno - 1, node.end_lineno
         indent = lines[start][: len(lines[start]) - len(lines[start].lstrip())]
-        new_block = _format_new_block(indent, new_all_str)
+        new_block = _format_new_block(indent, sorted_all)
         old_block = "".join(lines[start:end])
         if old_block == new_block:
-            print(f"✅ {path} is up to date. Current __all__: [{new_all_str}]")
-            return False
+            return False, None
         new_lines[start:end] = [new_block]
     else:
-        new_block = _format_new_block("", new_all_str)
+        new_block = _format_new_block("", sorted_all)
         new_lines.append(new_block)
 
     if not dry_run:
         path.write_text("".join(new_lines))
-        action = "🔁 Updated" if old_block else "+ Added"
-        print(f"{action} __all__ in {path}")
-    else:
-        print(f"📝 Dry run: no changes written to {path}")
 
-    return True
+    return True, None
 
 
 def get_src_dirs(pyproject_path: Path) -> list[Path]:
@@ -155,11 +165,43 @@ def extract_current_all(tree: ast.Module) -> list[str] | None:
     try:
         all_node = assigns[0].value
         if isinstance(all_node, (ast.List | ast.Tuple)):
-            return [elt.s for elt in all_node.elts if isinstance(elt, ast.Str)]
-    except Exception:  # noqa: BLE001
-        # Avoid breaking on malformed __all__; return None instead
+            return [elt.value for elt in all_node.elts if isinstance(elt, ast.Constant)]
+    except (AttributeError, ValueError, TypeError):
         return None
     return None
+
+
+def process_file(
+    file_path: Path,
+    *,
+    dry_run: bool = False,
+    verbose: bool = False,
+) -> ProcessResult:
+    code = file_path.read_text()
+    tree = ast.parse(code)
+
+    if any(
+        isinstance(node, ast.ImportFrom) and any(alias.name == "*" for alias in node.names)
+        for node in tree.body
+    ):
+        return {"status": "skip", "reason": "wildcard", "file": file_path}
+
+    flags = parse_control_flags(code)
+    if flags["file"]["ignore_file"]:
+        return {"status": "skip", "reason": "ignore", "file": file_path}
+
+    public_names = find_public_names(tree, flags)
+    old_all = extract_current_all(tree) if verbose else None
+
+    changed, reason = update_dunder_all(file_path, public_names, dry_run=dry_run)
+
+    return {
+        "status": "changed" if changed else "unchanged",
+        "file": file_path,
+        "old_all": old_all,
+        "new_all": public_names,
+        "reason": reason,
+    }
 
 
 def main(
@@ -167,43 +209,16 @@ def main(
     *,
     dry_run: bool = False,
     verbose: bool = False,
-) -> None:
+) -> list[ProcessResult]:
     if path is None:
         pyproject_path = Path("pyproject.toml")
         if not pyproject_path.exists():
-            print("Error: no path given and no pyproject.toml found.")
-            return
-        files_to_process: list[Path] = []
+            return [{"status": "error", "reason": "no-pyproject"}]
+
+        files_to_process = []
         for src in get_src_dirs(pyproject_path):
             files_to_process.extend(collect_init_files(src))
     else:
         files_to_process = [Path(path)]
 
-    for file_path in files_to_process:
-        code = file_path.read_text()
-        tree = ast.parse(code)
-
-        if any(
-            isinstance(node, ast.ImportFrom) and any(alias.name == "*" for alias in node.names)
-            for node in tree.body
-        ):
-            print(f"⚠️  Wildcard import in {file_path}; skipping.")
-            continue
-
-        flags = parse_control_flags(code)
-        if flags["file"]["ignore_file"]:
-            print(f"🚫 Skipped {file_path} (file ignored by directive)")
-            continue
-
-        names = find_public_names(tree, flags)
-
-        if verbose:
-            old_all = extract_current_all(tree)
-            print(f"📂 {file_path}")
-            print(f"  Old __all__: {old_all}")
-            print(f"  New __all__: {names}")
-
-        changed = update_dunder_all(file_path, names, dry_run=dry_run)
-
-        if not changed:
-            print(f"✅ {file_path} — up to date")
+    return [process_file(file_path, dry_run=dry_run, verbose=verbose) for file_path in files_to_process]
