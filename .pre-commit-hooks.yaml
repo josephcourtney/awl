@@ -2,5 +2,4 @@
   name: awl - sync __all__
   entry: awl
   language: system
-  files: ^src/.+\.py$
   stages: [pre-commit]
