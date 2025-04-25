@@ -1,7 +1,7 @@
 # =================================== project ====================================
 [project]
   name = "awl"
-  dynamic = ["version"]
+  version = "0.1.7"
   description = "simple utility to keep `__all__` up to date"
   readme = "README.md"
   authors = [
@@ -34,14 +34,9 @@
 
 # =================================== build ====================================
 [build-system]
-  requires      = ["hatchling"]
-  build-backend = "hatchling.build"
+  requires      = ["uv_build>=0.6,<0.7"]
+  build-backend = "uv_build"
 
-[tool.hatch.build]
-  includes = ["src/awl/**"]
-
-[tool.hatch.version]
-  path = "src/awl/__version__.py"
 
 # ==================================== lint ====================================
 [tool.ruff]
@@ -102,3 +97,35 @@
 
 [tool.coverage.xml]
   output = ".coverage.xml"
+
+[tool.uv.sources]
+  awl = { git = "https://github.com/josephcourtney/awl" }
+
+[tool.commitizen]
+  name                     = "cz_conventional_commits"
+  tag_format               = "v{version}"
+  update_changelog_on_bump = true
+  bump_message             = "chore: bump version to {new_version}"
+  major_version_zero       = true
+  version_provider         = "uv"
+
+  # Define the allowed commit types and their descriptions:
+  [tool.commitizen.types]
+    feat     = "A new feature"
+    fix      = "A bug fix"
+    docs     = "Documentation only changes"
+    style    = "Code style (formatting, missing semi-colons, etc.)"
+    refactor = "Refactoring code without feature changes"
+    perf     = "Performance improvements"
+    test     = "Adding missing tests or correcting existing ones"
+    ci       = "CI configuration changes"
+    chore    = "Other changes that don't modify src or tests"
+
+  # Define your scopes so people choose from a fixed list:
+  [tool.commitizen.scopes]
+    router     = "Changes to routing logic"
+    dispatcher = "Changes to dispatcher/handler plumbing"
+    cache      = "Caching layer updates"
+    api        = "API‐layer changes"
+    docs       = "Documentation"
+    tests      = "Test suite changes"
